@@ -1,29 +1,22 @@
 /**
- * Module bundlers compile small pieces of code into something larger and more
- * complex that can run in a web browser. These small pieces are just JavaScript
- * files, and dependencies between them are expressed by a module system
+ * 모듈 번들러들은 작은 코드 조각들을 웹 브라우저에서 실행될 수 있는 크고 복잡한 파일로 컴파일합니다.
+ * 이 작은 조각들은 단지 자바스크립트 파일들일 뿐이며, 이들 사이의 종속성은 모듈 시스템에 의해 표현됩니다
  * (https://webpack.js.org/concepts/modules).
  *
- * Module bundlers have this concept of an entry file. Instead of adding a few
- * script tags in the browser and letting them run, we let the bundler know
- * which file is the main file of our application. This is the file that should
- * bootstrap our entire application.
+ * 모듈 번들러들은 entry file 이라는 개념을 가지고 있습니다. 브라우저에 스크립트 태그를 몇개 추가하여
+ * 실행하는 대신, 번들 담당자에게 응용 프로그램의 메인 파일이 무엇인지 알려 줍니다. 이 파일이 어플리케이션을
+ * 실헹하는 진입점이 됩니다.
  *
- * Our bundler will start from that entry file, and it will try to understand
- * which files it depends on. Then, it will try to understand which files its
- * dependencies depend on. It will keep doing that until it figures out about
- * every module in our application, and how they depend on one another.
+ * 번들러는 entry file의 의존성을 분석합니다. 그리고 그 다음 파일의 의존성을 파악합니다.
+ * 이 작업은 애플리케이션의 모든 모듈과 각 모듈이 서로 어떻게 의존하는지 파악할 때까지 반복됩니다.
  *
- * This understanding of a project is called the dependency graph.
+ * 이러한 프로젝트에 대한 이해를 종속성 그래프라 부릅니다.
  *
- * In this example, we will create a dependency graph and use it to package
- * all of its modules in one bundle.
+ * 이 예제에서는 종속성 그래프를 만들고 이 그래프를 사용하여 모든 모듈들을 하나의 번들로 패키징 합니다.
+ * 그럼 시작해 보겠습니다 :)
  *
- * Let's begin :)
- *
- * Please note: This is a very simplified example. Handling cases such as
- * circular dependencies, caching module exports, parsing each module just once
- * and others are skipped to make this example as simple as possible.
+ * 참고: 이 예제는 매우 단순화되어 있습니다. 순환 참조, 캐싱 모듈, 파싱 최적화 등에 대한 내용은 생략
+ * 하여 가능한가 단순하게 만들었습니다.
  */
 
 const fs = require('fs');
@@ -34,60 +27,58 @@ const {transformFromAst} = require('babel-core');
 
 let ID = 0;
 
-// We start by creating a function that will accept a path to a file, read
-// its contents, and extract its dependencies.
+
+// 우선 file path를 받는 함수를 생성하고
+// 파일을 내용을 읽고, 종속성을 추출합니다.
 function createAsset(filename) {
-  // Read the content of the file as a string.
+
+  // 파일의 내용을 문자열로 읽습니다.
   const content = fs.readFileSync(filename, 'utf-8');
 
-  // Now we try to figure out which files this file depends on. We can do that
-  // by looking at its content for import strings. However, this is a pretty
-  // clunky approach, so instead, we will use a JavaScript parser.
-  //
-  // JavaScript parsers are tools that can read and understand JavaScript code.
-  // They generate a more abstract model called an AST (abstract syntax tree).
+  // 이제 이 파일이 어떤 파일에 종속되는지 알아보겠습니다. 우리는 import 문자열을 보고 의존성을
+  // 파악할 수 있습니다 하지만, 이것은 단순한 접근법이어서, 대신에 자바스크립트 파서를 사용하겠습니다.
 
-  // I strongly suggest that you look at AST Explorer (https://astexplorer.net)
-  // to see how an AST looks like.
+  // 자바스크립트 파서들은 자바스크립트 코드를 읽고 이해할 수 있도록 도와주는 툴입니다.
+  // 파서는 AST(abstract syntax tree)라는 좀더 추상화된 모델을 생성합니다.
   //
-  // The AST contains a lot of information about our code. We can query it to
-  // understand what our code is trying to do.
+  // AST에 대해 이해하려면 AST Explorer(https://astexplorer.net)을 꼭 보기를 강력하게 추천합니다.
+  // AST가 어떻게 이루어져 있는지 확인할 수 있습니다.
+  //
+  // AST는 우리의 코드에 대해 많 정보를 가지고 있습니다. 우리는 쿼리를 이용하여
+  // 우리의 코드가 하려는 일에 대해 이해할 수 있습니다.
   const ast = babylon.parse(content, {
     sourceType: 'module',
   });
 
-  // This array will hold the relative paths of modules this module depends on.
+  // 이 배열은 현재 모듈의 의존성을 상대 경로로 가지고 있을 것입니다.
   const dependencies = [];
 
-  // We traverse the AST to try and understand which modules this module depends
-  // on. To do that, we check every import declaration in the AST.
+  // 우리는 AST 순회를 통해 각각의 모듈들이 어떤 의존성을 가지고 있는지 이해하려 합니다.
+  // 이것을 통해 AST안에서 모든 import keyword 선언을 파악할 수 있습니다.
   traverse(ast, {
-    // EcmaScript modules are fairly easy because they are static. This means
-    // that you can't import a variable, or conditionally import another module.
-    // Every time we see an import statement we can just count its value as a
-    // dependency.
+    // ECMAScript 모듈들은 정적이므로 매우 파악하기 쉽습니다.이는 변수를 가져올 수 없거나 조건부로
+    // 다른 모듈을 가져올 수 없음을 의미합니다. import 구분믈 볼 때 마다 카운팅을 하고 의존성을 가지고
+    // 있는 것으로 간주 할 수 있습니다.
     ImportDeclaration: ({node}) => {
-      // We push the value that we import into the dependencies array.
+      // import 구문마다 dependencies 배열에 값을 추가합니다.
       dependencies.push(node.source.value);
     },
   });
 
-  // We also assign a unique identifier to this module by incrementing a simple
-  // counter.
+  // 또한 간단한 카운터를 이용하여 이 모듈에 고유 식별자를 할당합니다.
   const id = ID++;
 
-  // We use EcmaScript modules and other JavaScript features that may not be
-  // supported on all browsers. To make sure our bundle runs in all browsers we
-  // will transpile it with Babel (see https://babeljs.io).
+  // 우리는 일부 브라우저에서만 지원하는 ECMAScript module들이나 기능들을 사용할 가능성도 있습니다.
+  // 우리가 만드는 번들이 모든 브라우저에서 돌아가도록 Babel을 이용해서 transpile할 수 있습니다
+  // (https://babeljs.io 참고).
   //
-  // The `presets` option is a set of rules that tell Babel how to transpile
-  // our code. We use `babel-preset-env` to transpile our code to something
-  // that most browsers can run.
+  // `presets` 옵션은 Babel이 어떻게 우리 코드를 바꿀지에 대해 결정합니다. 우리는 `babel-preset-env`
+  // 를 이용하여 대부분의 브라우저에서 우리의 코드를 사용할 수 있도록 바꾸도록 하겠습니다.
   const {code} = transformFromAst(ast, null, {
     presets: ['env'],
   });
 
-  // Return all information about this module.
+  // 이 모듈에 대한 정보를 return 합니다.
   return {
     id,
     filename,
@@ -96,127 +87,103 @@ function createAsset(filename) {
   };
 }
 
-// Now that we can extract the dependencies of a single module, we are going to
-// start by extracting the dependencies of the entry file.
-//
-// Then, we are going to extract the dependencies of every one of its
-// dependencies. We will keep that going until we figure out about every module
-// in the application and how they depend on one another. This understanding of
-// a project is called the dependency graph.
+// 이제 단일 모듈의 종속성을 추출할 수 있으므로, entry file의 의존성을 추출하는 것부터 시작하겠습니다.
+// 이 작업은 애플리케이션의 모든 모듈과 각 모듈이 서로 어떻게 의존하는지를 파악할 때까지 계속 진행할 것입니다.
+// 이 작업을 의존성 그래프라 부릅니다.
 function createGraph(entry) {
-  // Start by parsing the entry file.
+  // entry file부터 분석을 시작합니다.
   const mainAsset = createAsset(entry);
 
-  // We're going to use a queue to parse the dependencies of every asset. To do
-  // that we are defining an array with just the entry asset.
+  // queue를 사용해서 모든 asset의 의존성을 분석하도록 하겠습니다. 이 작업을 위해
+  // entry asset을 가지고 있는 배열을 정의합니다.
   const queue = [mainAsset];
 
-  // We use a `for ... of` loop to iterate over the queue. Initially the queue
-  // only has one asset but as we iterate it we will push additional new assets
-  // into the queue. This loop will terminate when the queue is empty.
+  // 여기서 queue의 반복을 위해 `for ...of` 반복문을 사용합니다. 처음에는 queue가 asset을 하나만
+  // 가지고 있지만 작업이 반복되는 동안에 새로운 asset들을 queue에 추가합니다. 이 반복문은 queue가
+  // 비어질 때 까지 계속됩니다.
   for (const asset of queue) {
-    // Every one of our assets has a list of relative paths to the modules it
-    // depends on. We are going to iterate over them, parse them with our
-    // `createAsset()` function, and track the dependencies this module has in
-    // this object.
+
+    // 모든 asset들은 의존성이 있는 모듈에 대한 상대경로들을 리스트로 가지고 있습니다. 우리는 그 리스트를
+    // 순회하면서 `createAsset()`함수로 분석하고, 아래 객체를 통하여 모듈들의 의존성을 추척할 것입니다.
     asset.mapping = {};
 
-    // This is the directory this module is in.
+    // 이것은 이 모듈이 있는 디렉토리입니다.
     const dirname = path.dirname(asset.filename);
 
-    // We iterate over the list of relative paths to its dependencies.
+    // 종속성에 대한 상대 경로 리스트를 순회합니다.
     asset.dependencies.forEach(relativePath => {
-      // Our `createAsset()` function expects an absolute filename. The
-      // dependencies array is an array of relative paths. These paths are
-      // relative to the file that imported them. We can turn the relative path
-      // into an absolute one by joining it with the path to the directory of
-      // the parent asset.
+      // `createAsset()` 함수는 절대 경로가 필요합니다. dependencies 배열은 상대 경로를 가지고
+      // 있는 배열입니다. 이러한 경로들은 모듈이 import된 file에 따라 상대적입니다. 따라서 부모 asset의
+      // 경로를 이용해서 상대 경로를 절대경로로 바꿔야 합니다.
       const absolutePath = path.join(dirname, relativePath);
 
-      // Parse the asset, read its content, and extract its dependencies.
+      // asset의 내용울 분석하고, 내용을 읽고, 의존성을 추출합니다.
       const child = createAsset(absolutePath);
 
-      // It's essential for us to know that `asset` depends on `child`. We
-      // express that relationship by adding a new property to the `mapping`
-      // object with the id of the child.
+      // `asset`의 의존성은 `child`에게 달려있습니다. 우리는 `mapping` 객체에 relativePath와 child.id를
+      // 이용해서 관계를 표현할 수 있습니다.
       asset.mapping[relativePath] = child.id;
 
-      // Finally, we push the child asset into the queue so its dependencies
-      // will also be iterated over and parsed.
+      // 마지막으로 child asset을 queue에 추가하여 구문 분석이 반복되도록 합니다.
       queue.push(child);
     });
   }
 
-  // At this point the queue is just an array with every module in the target
-  // application: This is how we represent our graph.
+  // 이 시점에서 queue는 애플리케이션의 모든 모듈이 포함된 배열입니다. 이것이 우리가 그래프를 표현하는 방법입니다.
   return queue;
 }
 
-// Next, we define a function that will use our graph and return a bundle that
-// we can run in the browser.
+// 다음으로, 그래프를 이용하여 브라우저에서 실행할 수 있는 번들을 반환하는 함수를 정의합니다.
 //
-// Our bundle will have just one self-invoking function:
+// 우리의 번들은 self-invoking(자신을 부를수 있는)함수를 가지고 있습니다.
 //
 // (function() {})()
 //
-// That function will receive just one parameter: An object with information
-// about every module in our graph.
+// 이 함수는 하나의 인자만 받을 수 있습니다: 모둔 모듈의 정보를 가지고 있는 그래프.
 function bundle(graph) {
   let modules = '';
 
-  // Before we get to the body of that function, we'll construct the object that
-  // we'll pass to it as a parameter. Please note that this string that we're
-  // building gets wrapped by two curly braces ({}) so for every module, we add
-  // a string of this format: `key: value,`.
+  // 이 함수를 구성하기 전에 매개 변수로 전달할 객체를 만들겠습니다. 반드시 알아둬야할 것은 우리가 만드는
+  // 스트링은 2개의 중괄호({})로 감싸져 있어야 한다는 것입니다. 우리는 다음과 같은 포멧으로 추가할
+  // 것입니다: `key: value,`.
   graph.forEach(mod => {
-    // Every module in the graph has an entry in this object. We use the
-    // module's id as the key and an array for the value (we have 2 values for
-    // every module).
+
+    // 그래프안에 있는 모든 모듈들은 entry를 객체로 가지고 있습니다. 우리는 module의 id를
+    // 값에 대한 키로 사용합니.(각 모듈마다 2개의 값이 있습니다.)
     //
-    // The first value is the code of each module wrapped with a function. This
-    // is because modules should be scoped: Defining a variable in one module
-    // shouldn't affect others or the global scope.
+    // 찻번째 값은 함수로 감싼 각 모듈의 코드입니다. 그 이유는 모듈의 scope를 지정해야 하기 때문입니다.
+    // 한 모듈에서 변수를 정의하면 다른 모듈이나 글로벌 scope에 영향을 주지 않아야 합니다.
     //
-    // Our modules, after we transpiled them, use the CommonJS module system:
-    // They expect a `require`, a `module` and an `exports` objects to be
-    // available. Those are not normally available in the browser so we'll
-    // implement them and inject them into our function wrappers.
+    // transpiled된 모듈들은 CommonJS 모듈 시스템을 사용합니다:
+    // 해당 모듈 시스템은 `require`, `module`, 그리고 `exports`를 통해 모듈화 합니다.
+    // 이 키워드들은 일반적으로 브라우저에서 사용할수 없으므로, 우리의 함수를 이용하여 주입해야 합니다.
     //
-    // For the second value, we stringify the mapping between a module and its
-    // dependencies. This is an object that looks like this:
+    // 두번째 값은 모듈간의 의존성 매핑을 stringify하는 것입니다. 다음과 같은 객체입니다.
     // { './relative/path': 1 }.
     //
-    // This is because the transpiled code of our modules has calls to
-    // `require()` with relative paths. When this function is called, we should
-    // be able to know which module in the graph corresponds to that relative
-    // path for this module.
+    // transplied된 우리의 모듈들이 상대경로와 합께 `require()`를 호출하기 때문입니다. 이 함수를 호출하면
+    // 그래프에서 이 모듈의 상대 경로에 해당하는 모듈을 확인할 수 있습니다.
     modules += `${mod.id}: [
       function (require, module, exports) { ${mod.code} },
       ${JSON.stringify(mod.mapping)},
     ],`;
   });
 
-  // Finally, we implement the body of the self-invoking function.
+  // 마지막으로 self-invoking 함수의 body를 만듭니다.
   //
-  // We start by creating a `require()` function: It accepts a module id and
-  // looks for it in the `modules` object we constructed previously. We
-  // destructure over the two-value array to get our function wrapper and the
-  // mapping object.
+  // `require()` 함수를 만들며 시작하겠습니다: 모듈 id를 받아 앞서 만든 모듈 오브젝트에서 `module`을
+  // 찾습니다. function wrapper와 맵핑 객체를 얻기위해 two-value 객체를 이용합니다.
   //
-  // The code of our modules has calls to `require()` with relative file paths
-  // instead of module ids. Our require function expects module ids. Also, two
-  // modules might `require()` the same relative path but mean two different
-  // modules.
+  // 모듈의 코드는 모듈의 id들 대신 상대경로와 함께 `reuiqre()`함수를 호출합니다. 우리가 만든 require 함수는
+  // id들을 받습니다. 또한 두개의 모듈은 동일한 상대 경로를 요구할 수 있지만, 실제론 두개의 다른 모듈들을
+  // 의미하게 됩니다.
   //
-  // To handle that, when a module is required we create a new, dedicated
-  // `require` function for it to use. It will be specific to that module and
-  // will know to turn its relative paths into ids by using the module's
-  // mapping object. The mapping object is exactly that, a mapping between
-  // relative paths and module ids for that specific module.
+  // 이 문제를 처리하기 위해서, `require` 함수가 사용할 수 있는 함수를 개발합니다.
+  // 구체적으로, 모듈의 맵핑 객체를 이용해서 id를 이용해 상대 경로를 반환하는 방법을 사용합니다.
+  // 매핑 객체는 특정 모듈에 대한 상대 경로와 모듈 id간의 매핑입니다.
   //
-  // Lastly, with CommonJs, when a module is required, it can expose values by
-  // mutating its `exports` object. The `exports` object, after it has been
-  // changed by the module's code, is returned from the `require()` function.
+  // 마지막으로, CommonJS 스타일로 모듈을 요청 할 때, `exports` 객체로 바꾸어야 합니다. 이 코드에 의해 변경된
+  // `exports` 객체는 `require()`로 반환됩니다.
   const result = `
     (function(modules) {
       function require(id) {
@@ -237,7 +204,7 @@ function bundle(graph) {
     })({${modules}})
   `;
 
-  // We simply return the result, hurray! :)
+  // 결과를 반환합니다. 만세! :)
   return result;
 }
 
