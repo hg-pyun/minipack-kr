@@ -1,8 +1,8 @@
 {
-  "name": "minipack",
+  "name": "minipack-r",
   "version": "1.0.0",
-  "description": "",
-  "author": "Ronen Amiel",
+  "description": "A simplified example of a modern module bundler written in JavaScript",
+  "author": "Ronen Amiel/Translate Haegul Pyun",
   "license": "MIT",
   "dependencies": {
     "babel-core": "^6.26.0",
