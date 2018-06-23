@@ -89,7 +89,7 @@ function createAsset(filename) {
 
 // 이제 단일 모듈의 종속성을 추출할 수 있으므로, entry file의 의존성을 추출하는 것부터 시작하겠습니다.
 // 이 작업은 애플리케이션의 모든 모듈과 각 모듈이 서로 어떻게 의존하는지를 파악할 때까지 계속 진행할 것입니다.
-// 이 작업을 의존성 그래프라 부릅니다.
+// 이 작업의 결과물을 의존성 그래프라 부릅니다.
 function createGraph(entry) {
   // entry file부터 분석을 시작합니다.
   const mainAsset = createAsset(entry);
@@ -174,15 +174,16 @@ function bundle(graph) {
   // `require()` 함수를 만들며 시작하겠습니다: 모듈 id를 받아 앞서 만든 모듈 오브젝트에서 `module`을
   // 찾습니다. function wrapper와 맵핑 객체를 얻기위해 two-value 객체를 이용합니다.
   //
-  // 모듈의 코드는 모듈의 id들 대신 상대경로와 함께 `reuiqre()`함수를 호출합니다. 우리가 만든 require 함수는
-  // id들을 받습니다. 또한 두개의 모듈은 동일한 상대 경로를 요구할 수 있지만, 실제론 두개의 다른 모듈들을
+  // 모듈의 코드는 모듈의 id들 대신 상대경로와 함께 `require()`함수를 호출합니다. 우리가 만든 require 함수는
+  // id 받습니다. 또한 두개의 모듈은 동일한 상대 경로를 요구할 수 있지만, 실제론 두개의 다른 모듈들을
   // 의미하게 됩니다.
   //
-  // 이 문제를 처리하기 위해서, `require` 함수가 사용할 수 있는 함수를 개발합니다.
-  // 구체적으로, 모듈의 맵핑 객체를 이용해서 id를 이용해 상대 경로를 반환하는 방법을 사용합니다.
-  // 매핑 객체는 특정 모듈에 대한 상대 경로와 모듈 id간의 매핑입니다.
+  // 이 문제를 해결하기 위해 별도의 `require` 함수를 제공합니다. 번역중[It will be specific to that module and
+  // will know to turn its relative paths into ids by using the module's
+  // mapping object. The mapping object is exactly that, a mapping between
+  // relative paths and module ids for that specific module.]
   //
-  // 마지막으로, CommonJS 스타일로 모듈을 요청 할 때, `exports` 객체로 바꾸어야 합니다. 이 코드에 의해 변경된
+  // 마지막으로, 모듈이 require 되었을 때 exports 객체의 값이 노출되어야 합니다. 따라서 모듈 코드에 의해 변환 된
   // `exports` 객체는 `require()`로 반환됩니다.
   const result = `
     (function(modules) {
