@@ -1,8 +1,8 @@
 ## 📦 Minipack-kr
 
-*이 문서는 [minipack](https://github.com/ronami/minipack)을 한글로 번역한 문서입니다.*
+*[minipack](https://github.com/ronami/minipack)을 한글로 번역한 문서입니다.*
 
-> 자바스크립트로 모듈 번들러를 만드는 간단한 예제입니다.
+> 자바스크립트 모듈 번들러를 만드는 간단한 예제입니다.
 
 ### 소개
 
