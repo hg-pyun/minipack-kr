@@ -5,7 +5,7 @@
  *
  * 모듈 번들러들은 entry file 이라는 개념을 가지고 있습니다. 브라우저에 스크립트 태그를 몇개 추가하여
  * 실행하는 대신, 번들 담당자에게 응용 프로그램의 메인 파일이 무엇인지 알려 줍니다. 이 파일이 어플리케이션을
- * 실헹하는 진입점이 됩니다.
+ * 실행하는 진입점이 됩니다.
  *
  * 번들러는 entry file의 의존성을 분석합니다. 그리고 그 다음 파일의 의존성을 파악합니다.
  * 이 작업은 애플리케이션의 모든 모듈과 각 모듈이 서로 어떻게 의존하는지 파악할 때까지 반복됩니다.
@@ -44,7 +44,7 @@ function createAsset(filename) {
   // AST에 대해 이해하려면 AST Explorer(https://astexplorer.net)을 꼭 보기를 강력하게 추천합니다.
   // AST가 어떻게 이루어져 있는지 확인할 수 있습니다.
   //
-  // AST는 우리의 코드에 대해 많 정보를 가지고 있습니다. 우리는 쿼리를 이용하여
+  // AST는 우리의 코드에 대해 많은 정보를 가지고 있습니다. 우리는 쿼리를 이용하여
   // 우리의 코드가 하려는 일에 대해 이해할 수 있습니다.
   const ast = babylon.parse(content, {
     sourceType: 'module',
@@ -57,7 +57,7 @@ function createAsset(filename) {
   // 이것을 통해 AST안에서 모든 import keyword 선언을 파악할 수 있습니다.
   traverse(ast, {
     // ECMAScript 모듈들은 정적이므로 매우 파악하기 쉽습니다.이는 변수를 가져올 수 없거나 조건부로
-    // 다른 모듈을 가져올 수 없음을 의미합니다. import 구분믈 볼 때 마다 카운팅을 하고 의존성을 가지고
+    // 다른 모듈을 가져올 수 없음을 의미합니다. import 구분을 볼 때 마다 카운팅을 하고 의존성을 가지고
     // 있는 것으로 간주 할 수 있습니다.
     ImportDeclaration: ({node}) => {
       // import 구문마다 dependencies 배열에 값을 추가합니다.
@@ -98,7 +98,7 @@ function createGraph(entry) {
   // entry asset을 가지고 있는 배열을 정의합니다.
   const queue = [mainAsset];
 
-  // 여기서 queue의 반복을 위해 `for ...of` 반복문을 사용합니다. 처음에는 queue가 asset을 하나만
+  // 여기서 queue의 반복을 위해 `for ... of` 반복문을 사용합니다. 처음에는 queue가 asset을 하나만
   // 가지고 있지만 작업이 반복되는 동안에 새로운 asset들을 queue에 추가합니다. 이 반복문은 queue가
   // 비어질 때 까지 계속됩니다.
   for (const asset of queue) {
@@ -139,7 +139,7 @@ function createGraph(entry) {
 //
 // (function() {})()
 //
-// 이 함수는 하나의 인자만 받을 수 있습니다: 모둔 모듈의 정보를 가지고 있는 그래프.
+// 이 함수는 하나의 인자만 받을 수 있습니다: 모든 모듈의 정보를 가지고 있는 그래프.
 function bundle(graph) {
   let modules = '';
 
@@ -149,7 +149,7 @@ function bundle(graph) {
   graph.forEach(mod => {
 
     // 그래프안에 있는 모든 모듈들은 entry를 객체로 가지고 있습니다. 우리는 module의 id를
-    // 값에 대한 키로 사용합니.(각 모듈마다 2개의 값이 있습니다.)
+    // 값에 대한 키로 사용합니다.(각 모듈마다 2개의 값이 있습니다.)
     //
     // 찻번째 값은 함수로 감싼 각 모듈의 코드입니다. 그 이유는 모듈의 scope를 지정해야 하기 때문입니다.
     // 한 모듈에서 변수를 정의하면 다른 모듈이나 글로벌 scope에 영향을 주지 않아야 합니다.
@@ -161,7 +161,7 @@ function bundle(graph) {
     // 두번째 값은 모듈간의 의존성 매핑을 stringify하는 것입니다. 다음과 같은 객체입니다.
     // { './relative/path': 1 }.
     //
-    // transplied된 우리의 모듈들이 상대경로와 합께 `require()`를 호출하기 때문입니다. 이 함수를 호출하면
+    // transpiled된 우리의 모듈들이 상대경로와 합께 `require()`를 호출하기 때문입니다. 이 함수를 호출하면
     // 그래프에서 이 모듈의 상대 경로에 해당하는 모듈을 확인할 수 있습니다.
     modules += `${mod.id}: [
       function (require, module, exports) { ${mod.code} },
