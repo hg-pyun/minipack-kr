@@ -178,10 +178,8 @@ function bundle(graph) {
   // id 받습니다. 또한 두개의 모듈은 동일한 상대 경로를 요구할 수 있지만, 실제론 두개의 다른 모듈들을
   // 의미하게 됩니다.
   //
-  // 이 문제를 해결하기 위해 별도의 `require` 함수를 제공합니다. 번역중[It will be specific to that module and
-  // will know to turn its relative paths into ids by using the module's
-  // mapping object. The mapping object is exactly that, a mapping between
-  // relative paths and module ids for that specific module.]
+  // 이 문제를 해결하기 위해 별도의 `require` 함수를 제공합니다. 모듈의 맵핑 오브젝트를 이용하여 상대경로를 ids에 할당합니다. 
+  // 맵핑 오브젝트는 구체적인 모듈을 가져오기 위한 용도로, 상대 경로와 모듈 ids를 맵핑합니다.
   //
   // 마지막으로, 모듈이 require 되었을 때 exports 객체의 값이 노출되어야 합니다. 따라서 모듈 코드에 의해 변환 된
   // `exports` 객체는 `require()`로 반환됩니다.
