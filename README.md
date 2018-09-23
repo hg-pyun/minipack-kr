@@ -42,3 +42,4 @@ $ node src/minipack.js
 
 - [English](https://github.com/ronami/minipack)
 - [中文](https://github.com/chinanf-boy/minipack-explain)
+- [Русский/Russian](https://github.com/makewebme/build-your-own-webpack)
